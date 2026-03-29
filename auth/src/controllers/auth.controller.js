@@ -39,15 +39,16 @@ function ensureSingleDefaultAddress(user) {
  */
 const register = async (req, res) => {
   try {
-    const { username, email, password, fullName: { firstName, lastName }, role } = req.body;
+    const { username, email, password, fullName, role } = req.body;
+    const firstName = fullName?.firstName;
+    const lastName = fullName?.lastName;
 
     if (
       !username ||
       !email ||
       !password ||
-      !fullName ||
-      !fullName.firstName ||
-      !fullName.lastName
+      !firstName ||
+      !lastName
     ) {
       return res.status(400).json({
         message: "Missing required fields",
@@ -71,7 +72,10 @@ const register = async (req, res) => {
       username,
       email,
       password: hashPassword,
-      fullName,
+      fullName: {
+        firstName,
+        lastName,
+      },
       role: role || "user",
     });
 
