@@ -62,7 +62,37 @@ const createProductValidatorsWithFiles = [
 	validateFiles,
 ];
 
+const updateProductValidators = [
+	body('title')
+		.optional({ nullable: true })
+		.isString()
+		.withMessage('title must be a string')
+		.trim(),
+
+	body('description')
+		.optional({ nullable: true })
+		.isString()
+		.withMessage('description must be a string')
+		.trim()
+		.isLength({ max: 500 })
+		.withMessage('description can be at most 500 characters long'),
+
+	body('priceAmount')
+		.optional({ nullable: true })
+		.isFloat({ gt: 0 })
+		.withMessage('priceAmount must be a number > 0')
+		.toFloat(),
+
+	body('priceCurrency')
+		.optional({ nullable: true })
+		.isIn(['USD', 'INR'])
+		.withMessage('priceCurrency must be INR or USD'),
+
+	handleValidationErrors,
+];
+
 module.exports = {
 	createProductValidators,
 	createProductValidatorsWithFiles,
+	updateProductValidators,
 };

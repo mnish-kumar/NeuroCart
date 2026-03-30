@@ -28,10 +28,51 @@ router.get('/', productController.getProducts);
 
 
 /**
+ * @route GET /api/products/seller
+ * @desc List products belonging to the authenticated seller
+ * @access Private (Seller)
+ */
+router.get(
+    '/seller', 
+    createAuthMiddleware(['seller']), 
+    productController.getProductBySeller
+);
+
+
+/**
  * @route GET /api/products/:id
  * @desc Get product details by ID
  * @access Public
  */
-router.get('/:id', productController.getProductById);
+router.get(
+    '/:id',
+    productController.getProductById
+);
+
+
+/**
+ * @route PATCH /api/products/:id
+ * @desc Update product fields
+ * @access Private (Seller/Admin)
+ */
+router.patch(
+    '/:id',
+    createAuthMiddleware(['seller']),
+    productValidators.updateProductValidators,
+    productController.updateProduct
+);
+
+
+/**
+ * @route DELETE /api/products/:id
+ * @desc Delete a product
+ * @access Private (Seller)
+ */
+router.delete(
+    '/:id',
+    createAuthMiddleware(['seller']),
+    productController.deleteProduct
+);
+
 
 module.exports = router;
