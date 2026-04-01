@@ -14,12 +14,12 @@ async function addItemToCart(req, res){
 
     try {
         let cart = await cartModel.findOne({
-            user: user._id 
+            user: user.id 
         });
 
         if (!cart) {
             const cartData = {
-                user: user._id,
+                user: user.id,
                 items: [],
             };
 
@@ -106,12 +106,12 @@ async function getCart(req, res) {
 
     try {
         let cart = await cartModel.findOne({
-            user: user._id,
+            user: user.id,
         });
 
         if (!cart) {
             cart =  new cartModel({
-                user: user._id,
+                user: user.id,
                 items: [],
             });
             await cart.save();
