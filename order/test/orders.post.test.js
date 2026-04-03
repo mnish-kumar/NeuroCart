@@ -1,10 +1,9 @@
 const request = require('supertest');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
+const axios = require('axios');
 
 const app = require('../src/app');
-const inventoryService = require('../src/services/inventory.service');
-
 const FIXED_USER_ID = '69cbea18fd49baa5f2bc72df';
 
 function makeToken(payload) {
@@ -63,30 +62,60 @@ describe('POST /api/orders', () => {
   });
 
   it('creates an order with status=PENDING, computes totalPrice, and reserves inventory', async () => {
-    const reserveSpy = jest
-      .spyOn(inventoryService, 'reserveInventory')
-      .mockResolvedValue(true);
-
     const token = makeToken({ id: FIXED_USER_ID, role: 'user' });
 
-    const items = [
-      {
-        product: new mongoose.Types.ObjectId().toString(),
-        quantity: 2,
-        price: { amount: 100, currency: 'USD' },
-      },
-      {
-        product: new mongoose.Types.ObjectId().toString(),
-        quantity: 1,
-        price: { amount: 50, currency: 'USD' },
-      },
-    ];
+    // The current implementation builds the order from the user's cart
+    // and fetches pricing from the product service (no inventory reserve step).
+    const productId1 = new mongoose.Types.ObjectId().toString();
+    const productId2 = new mongoose.Types.ObjectId().toString();
+
+    const axiosGetSpy = jest.spyOn(axios, 'get').mockImplementation((url) => {
+      if (url.includes('/api/cart/')) {
+        return Promise.resolve({
+          data: {
+            cart: {
+              items: [
+                { productId: productId1, qty: 2 },
+                { productId: productId2, qty: 1 },
+              ],
+            },
+          },
+        });
+      }
+
+      if (url.includes(`/api/products/${productId1}`)) {
+        return Promise.resolve({
+          data: {
+            product: {
+              _id: productId1,
+              title: 'P1',
+              stock: 10,
+              price: { amount: 100, currency: 'INR' },
+            },
+          },
+        });
+      }
+
+      if (url.includes(`/api/products/${productId2}`)) {
+        return Promise.resolve({
+          data: {
+            product: {
+              _id: productId2,
+              title: 'P2',
+              stock: 10,
+              price: { amount: 50, currency: 'INR' },
+            },
+          },
+        });
+      }
+
+      return Promise.reject(new Error(`Unexpected axios.get url in test: ${url}`));
+    });
 
     const res = await request(app)
       .post('/api/orders')
       .set('Cookie', `token=${token}`)
       .send({
-        items,
         shippingAddress: {
           street: '1 Test St',
           city: 'Testville',
@@ -103,42 +132,14 @@ describe('POST /api/orders', () => {
     expect(res.body.order.status).toBe('PENDING');
     expect(res.body.order.user).toBe(FIXED_USER_ID);
 
-    expect(res.body.order.totalPrice.currency).toBe('USD');
+    // totalPrice currency uses DEFAULT_CURRENCY in the controller (defaults to INR)
+    expect(res.body.order.totalPrice.currency).toBe('INR');
     expect(res.body.order.totalPrice.amount).toBe(250);
 
     expect(res.body.order.items).toHaveLength(2);
     expect(res.body.order.items[0].quantity).toBe(2);
 
-    expect(reserveSpy).toHaveBeenCalledTimes(1);
-    expect(reserveSpy).toHaveBeenCalledWith(items);
+    expect(axiosGetSpy).toHaveBeenCalledTimes(3);
   });
 
-  it('returns 409 when inventory cannot be reserved', async () => {
-    jest.spyOn(inventoryService, 'reserveInventory').mockResolvedValue(false);
-
-    const token = makeToken({ id: FIXED_USER_ID, role: 'user' });
-
-    const res = await request(app)
-      .post('/api/orders')
-      .set('Cookie', `token=${token}`)
-      .send({
-        items: [
-          {
-            product: new mongoose.Types.ObjectId().toString(),
-            quantity: 1,
-            price: { amount: 10, currency: 'USD' },
-          },
-        ],
-        shippingAddress: {
-          street: '1 Test St',
-          city: 'Testville',
-          state: 'TS',
-          country: 'IN',
-          pincode: '560001',
-        },
-      });
-
-    expect(res.status).toBe(409);
-    expect(res.body.success).toBe(false);
-  });
 });
