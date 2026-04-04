@@ -1,9 +1,11 @@
 const { default: mongoose } = require("mongoose");
 const orderModel = require("../models/order.model");
 const axios = require("axios");
-const CART_SERVICE_URL =process.env.CART_SERVICE_URL || "http://localhost:3002";
+const CART_SERVICE_URL =
+  process.env.CART_SERVICE_URL || "http://localhost:3002";
 const DEFAULT_CURRENCY = process.env.DEFAULT_CURRENCY || "INR";
-const CART_SERVICE_TIMEOUT_MS =parseInt(process.env.CART_SERVICE_TIMEOUT_MS) || 5000;
+const CART_SERVICE_TIMEOUT_MS =
+  parseInt(process.env.CART_SERVICE_TIMEOUT_MS) || 5000;
 
 async function createOrder(req, res) {
   const user = req.user;
@@ -16,7 +18,6 @@ async function createOrder(req, res) {
       timeout: CART_SERVICE_TIMEOUT_MS,
     });
     cartResponseData = cartResponse.data?.cart;
-
   } catch (err) {
     console.error("Error fetching cart data:", err.message);
     return res.status(502).json({
@@ -37,31 +38,36 @@ async function createOrder(req, res) {
     });
   }
 
-
-  const products = await Promise.all(cartResponseData.items.map(async (item) => {
-    return (await axios.get(`http://localhost:3001/api/products/${item.productId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: CART_SERVICE_TIMEOUT_MS,
-    })).data;
-    
-  }));
+  const products = await Promise.all(
+    cartResponseData.items.map(async (item) => {
+      return (
+        await axios.get(
+          `http://localhost:3001/api/products/${item.productId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+            timeout: CART_SERVICE_TIMEOUT_MS,
+          },
+        )
+      ).data;
+    }),
+  );
 
   let priceAmount = 0;
   const productMap = new Map();
-  products.forEach(p => {
+  products.forEach((p) => {
     productMap.set(p.product._id.toString(), p.product);
   });
 
   const orderItems = cartResponseData.items.map((item) => {
     const product = productMap.get(item.productId);
-       
+
     if (!product) {
       return res.status(400).json({
         success: false,
         message: `Product with ID ${item.productId} not found.`,
       });
     }
- 
+
     // Stock check
     if (product.stock < item.qty) {
       return res.status(400).json({
@@ -69,18 +75,18 @@ async function createOrder(req, res) {
         message: `Insufficient stock for product ${product.title}. Available: ${product.stock}, Requested: ${item.qty}`,
       });
     }
- 
+
     const unitPrice = product.price?.amount;
-    const currency  = product.price?.currency || DEFAULT_CURRENCY;
- 
+    const currency = product.price?.currency || DEFAULT_CURRENCY;
+
     const itemTotal = unitPrice * item.qty;
     priceAmount += itemTotal;
- 
+
     return {
-      product:  item.productId,
+      product: item.productId,
       quantity: item.qty,
       price: {
-        amount:   itemTotal,
+        amount: itemTotal,
         currency: currency,
       },
     };
@@ -93,7 +99,7 @@ async function createOrder(req, res) {
       user: user.id,
       items: orderItems,
       totalPrice: {
-        amount:   priceAmount,
+        amount: priceAmount,
         currency: DEFAULT_CURRENCY,
       },
       shippingAddress: req.body.shippingAddress,
@@ -111,7 +117,6 @@ async function createOrder(req, res) {
     success: true,
     order: order,
   });
-
 }
 
 async function getMyOrders(req, res) {
@@ -185,8 +190,7 @@ async function getOrderById(req, res) {
       success: true,
       order,
     });
-
-  }catch (err) {
+  } catch (err) {
     console.error("Error fetching order by ID:", err.message);
     return res.status(500).json({
       success: false,
@@ -223,29 +227,29 @@ async function cancelOrderById(req, res) {
       });
     }
 
-    if (order.status === 'CANCELLED') {
+    if (order.status === "CANCELLED") {
       return res.status(400).json({
         success: false,
         message: "Order is already cancelled.",
       });
     }
 
-    const cancellableStatuses = ['PENDING', 'CONFIRMED'];
+    const cancellableStatuses = ["PENDING", "CONFIRMED"];
     if (!cancellableStatuses.includes(order.status)) {
       return res.status(400).json({
         success: false,
-        message: `Only orders in ${cancellableStatuses.join(', ')} status can be cancelled.`,
+        message: `Only orders in ${cancellableStatuses.join(", ")} status can be cancelled.`,
       });
     }
 
-    order.status = 'CANCELLED';
+    order.status = "CANCELLED";
     await order.save();
 
     return res.status(200).json({
       success: true,
       order,
     });
-  }catch (err) {
+  } catch (err) {
     console.error("Error cancelling order:", err.message);
     return res.status(500).json({
       success: false,
@@ -258,6 +262,13 @@ async function updateOrderAddress(req, res) {
   const userId = req.user?.id;
   const orderId = req.params?.id;
   const newAddress = req.body?.shippingAddress;
+
+  if (!newAddress) {
+    return res.status(400).json({
+      success: false,
+      message: "At least one address field is required",
+    });
+  }
 
   if (!mongoose.Types.ObjectId.isValid(orderId)) {
     return res.status(400).json({
@@ -283,7 +294,7 @@ async function updateOrderAddress(req, res) {
       });
     }
 
-    if (order.status !== 'PENDING') {
+    if (order.status !== "PENDING") {
       return res.status(400).json({
         success: false,
         message: "Only orders in PENDING status can be updated.",
@@ -297,7 +308,7 @@ async function updateOrderAddress(req, res) {
       success: true,
       order,
     });
-  }catch (err) {
+  } catch (err) {
     console.error("Error updating order address:", err.message);
     return res.status(500).json({
       success: false,
@@ -305,7 +316,6 @@ async function updateOrderAddress(req, res) {
     });
   }
 }
-
 
 module.exports = {
   createOrder,
