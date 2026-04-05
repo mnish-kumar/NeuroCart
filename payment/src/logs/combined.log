@@ -1,0 +1,1 @@
+{"env":"development","level":"info","message":"Creating payment for order","orderId":"69cd67493805039195c1f46a","route":"createPayment","service":"payment-service","timestamp":"2026-04-05T07:47:32.858Z","userId":"69cbea18fd49baa5f2bc72df"}
