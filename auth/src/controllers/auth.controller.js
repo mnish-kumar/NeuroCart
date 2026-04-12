@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const redis = require("../db/redis");
+const { publishToQueue } = require("../brokers/broker");
 
 function ensureSingleDefaultAddress(user) {
   if (!user || !Array.isArray(user.addresses) || user.addresses.length === 0) {
@@ -77,6 +78,14 @@ const register = async (req, res) => {
         lastName,
       },
       role: role || "user",
+    });
+
+    // Publish user registration event to RabbitMQ
+    await publishToQueue("AUTH_NOTIFICATIONS_USER_REGISTRATION", {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+      fullName: user.fullName,
     });
 
     const token = jwt.sign(
