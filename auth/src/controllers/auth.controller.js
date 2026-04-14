@@ -44,13 +44,7 @@ const register = async (req, res) => {
     const firstName = fullName?.firstName;
     const lastName = fullName?.lastName;
 
-    if (
-      !username ||
-      !email ||
-      !password ||
-      !firstName ||
-      !lastName
-    ) {
+    if (!username || !email || !password || !firstName || !lastName) {
       return res.status(400).json({
         message: "Missing required fields",
       });
@@ -81,12 +75,16 @@ const register = async (req, res) => {
     });
 
     // Publish user registration event to RabbitMQ
-    await publishToQueue("AUTH_NOTIFICATIONS_USER_REGISTRATION", {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      fullName: user.fullName,
-    });
+    await Promise.all([
+      publishToQueue("AUTH_NOTIFICATIONS_USER_REGISTRATION", {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        fullName: user.fullName,
+      }),
+
+      publishToQueue("AUTH_SELLER_DASHBOARD.USER_CREATED", user)
+    ]);
 
     const token = jwt.sign(
       {
@@ -235,7 +233,7 @@ async function getUserAddresses(req, res) {
       message: "User not found",
     });
   }
-  
+
   const didChange = ensureSingleDefaultAddress(user);
   if (didChange) {
     await user.save();
@@ -323,7 +321,9 @@ async function deleteUserAddress(req, res) {
     });
   }
 
-  const idx = (user.addresses || []).findIndex((a) => String(a._id) === String(addressId));
+  const idx = (user.addresses || []).findIndex(
+    (a) => String(a._id) === String(addressId),
+  );
   if (idx === -1) {
     return res.status(404).json({
       message: "Address not found",
@@ -349,7 +349,6 @@ async function deleteUserAddress(req, res) {
     addresses: user.addresses,
   });
 }
-
 
 module.exports = {
   register,

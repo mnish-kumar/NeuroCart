@@ -1,11 +1,11 @@
 const { default: mongoose } = require("mongoose");
 const orderModel = require("../models/order.model");
 const axios = require("axios");
-const CART_SERVICE_URL =
-  process.env.CART_SERVICE_URL || "http://localhost:3002";
+const CART_SERVICE_URL = process.env.CART_SERVICE_URL || "http://localhost:3002";
 const DEFAULT_CURRENCY = process.env.DEFAULT_CURRENCY || "INR";
-const CART_SERVICE_TIMEOUT_MS =
-  parseInt(process.env.CART_SERVICE_TIMEOUT_MS) || 5000;
+const CART_SERVICE_TIMEOUT_MS = parseInt(process.env.CART_SERVICE_TIMEOUT_MS) || 5000;
+const { publishToQueue } = require("../brokers/broker");
+
 
 async function createOrder(req, res) {
   const user = req.user;
@@ -112,6 +112,9 @@ async function createOrder(req, res) {
       message: "Failed to create order. Please try again.",
     });
   }
+
+  // --- Publish order created event to RabbitMQ ─────────────────────────────
+  await publishToQueue("ORDER_SELLER_DASHBOARD.ORDER_CREATED", order);
 
   return res.status(201).json({
     success: true,

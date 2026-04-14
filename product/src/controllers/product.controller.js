@@ -2,6 +2,8 @@ const productModel = require("../models/product.model");
 const { uploadImageBuffer } = require("../services/imagekit.service");
 const mongoose = require("mongoose");
 const cacheService = require("../services/cache.service");
+const { publishToQueue } = require("../brokers/broker");
+
 
 async function createProduct(req, res) {
   try {
@@ -52,6 +54,17 @@ async function createProduct(req, res) {
       seller,
       price,
       imageUrl,
+    });
+
+    // Publish product creation event to RabbitMQ
+    await publishToQueue("PRODUCT_SELLER_DASHBOARD.PRODUCT_CREATED", createProduct);
+
+    // Notify the user about the product creation
+    await publishToQueue("PRODUCT_NOTIFICATIONS_PRODUCT_CREATED", {
+      productId: createProduct._id,
+      email: req.user.email,
+      sellerId: seller,
+      username: req.user.username,
     });
 
     return res.status(201).json({

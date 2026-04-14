@@ -3,6 +3,7 @@ const axios = require('axios');
 const crypto = require('crypto');
 const Razorpay = require('razorpay');
 const logger = require('../utils/logger');
+const { publishToQueue } = require('../broker/broker');
 
 let razorpayClient;
 function getRazorpayClient() {
@@ -87,6 +88,20 @@ async function createPayment(req, res) {
                 currency: order.currency
             }
         });
+
+        // --- Publish payment initiated event to RabbitMQ ─────────────────────────────
+        await publishToQueue("PAYMENT_NOTIFICATION.PAYMENT_INITIATED", {
+            email: req.user.email,
+            orderId: payment.order,
+            paymentId: payment._id,
+            amount: payment.price.amount,
+            currency: payment.price.currency,
+            username: req.user.username,
+        });
+
+        // --- Publish payment created event to RabbitMQ ─────────────────────────────
+        await publishToQueue("PAYMENT_SELLER_DASHBOARD.PAYMENT_CREATED", payment);
+
 
         return res.status(201).json({
             success: true,
@@ -179,6 +194,19 @@ async function verifyPayment(req, res) {
                 message: "Payment not found"
             });
         }
+
+        // --- Publish payment completed event to RabbitMQ ─────────────────────────────
+        await publishToQueue("PAYMENT_NOTIFICATION.PAYMENT_COMPLETED", {
+            email: req.user.email,
+            orderId: payment.order,
+            paymentId: payment._id,
+            amount: payment.price.amount,
+            currency: payment.price.currency,
+            username: req.user.username,
+        });
+
+        // --- Publish payment verified event to RabbitMQ ─────────────────────────────
+        await publishToQueue("PAYMENT_SELLER_DASHBOARD.PAYMENT_UPDATE", payment);
 
         res.status(200).json({
             success: true,
