@@ -223,6 +223,12 @@ const logoutUser = async (req, res) => {
   });
 };
 
+
+/**
+ * @desc    Get all addresses for the current user
+ * @route   GET /api/auth/users/me/addresses
+ * @access  Private
+ */
 async function getUserAddresses(req, res) {
   const id = req.user.id;
 
