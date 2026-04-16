@@ -8,6 +8,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Basic route to check if the server is running
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Welcome to the Product API",
+  })
+});
+
 // Use product routes
 app.use('/api/products', productRoutes);
 
