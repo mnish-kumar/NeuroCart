@@ -71,7 +71,7 @@ async function createPayment(req, res) {
             userId: req.user?.id,
         });
 
-        const orderResponse = await axios.get(`http://localhost:3003/api/orders/` + orderId, {
+        const orderResponse = await axios.get(`neurocart-alb-1754343233.ap-south-1.elb.amazonaws.com/api/orders/` + orderId, {
             headers: {
                 Authorization: `Bearer ${token}`
             }

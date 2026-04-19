@@ -42,7 +42,7 @@ async function createOrder(req, res) {
     cartResponseData.items.map(async (item) => {
       return (
         await axios.get(
-          `http://localhost:3001/api/products/${item.productId}`,
+          `neurocart-alb-1754343233.ap-south-1.elb.amazonaws.com/api/products/${item.productId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
             timeout: CART_SERVICE_TIMEOUT_MS,
