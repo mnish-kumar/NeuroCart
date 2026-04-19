@@ -90,8 +90,29 @@ const registerRateLimit = async (req, res, next) => {
   }
 };
 
+const globalAPIRateLimiter = async (req, res, next) => {
+  const ip = req.headers["x-forwarded-for"] || req.connection.remoteAddress || req.ip;
+
+    try {
+        await globalAPIByIP.consume(ip);
+        next();
+    }
+    catch (err) {
+        if (err instanceof Error) {
+            console.error("Rate Limiter Error:", err);
+            return res.status(500).json({ message: "Internal Server Error" });
+        }
+        return res.status(429).json({
+            success: false,
+            message: "Too many requests. Try again later.",
+            retryAfter: Math.round(err.msBeforeNext / 1000) || 60,
+        });
+    }
+};
+
 
 module.exports = {
   loginRateLimiter,
   registerRateLimit,
+  globalAPIRateLimiter,
 };
