@@ -2,6 +2,7 @@ const express = require("express");
 const validators = require("../middleware/validator.middleware");
 const authController = require("../controllers/auth.controller");
 const authMiddleware = require("../middleware/auth.middleware");
+const rateLimiter = require("../middleware/rateLimiter.middleware");
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const router = express.Router();
  * @body { username, email, password, fullName: { firstName, lastName } }
  * @notes Keep this in sync with validator + controller requirements.
  */
-router.post("/register", validators.registerUserValidation, authController.register);
+router.post("/register", rateLimiter.registerRateLimit, validators.registerUserValidation, authController.register);
 
 /**
  * @route POST api/auth/login
@@ -20,7 +21,7 @@ router.post("/register", validators.registerUserValidation, authController.regis
  * @access Public
  * @body { username || email, password }
  */
-router.post("/login", validators.loginUserValidation, authController.loginUser);
+router.post("/login", rateLimiter.loginRateLimiter, validators.loginUserValidation, authController.loginUser);
 
 /**
  * @route GET api/auth/me

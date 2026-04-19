@@ -8,6 +8,9 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+// Trust first proxy (if behind a reverse proxy like Nginx or Heroku)
+app.set("trust proxy", 1); 
+
 // Basic route to check if the server is running
 app.get("/", (req, res) => {
   res.status(200).json({

@@ -2,7 +2,7 @@ const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
-const redis = require("../db/redis");
+const redis = require("../config/redis");
 const { publishToQueue } = require("../brokers/broker");
 
 function ensureSingleDefaultAddress(user) {
@@ -209,7 +209,11 @@ const logoutUser = async (req, res) => {
   const token = req.cookies.token;
 
   if (token) {
-    redis.set(`blacklist:${token}`, true, "EX", 24 * 60 * 60); // Blacklist token for 1 day
+    try {
+      await redis.set(`blacklist:${token}`, true, "EX", 24 * 60 * 60); // Blacklist token for 1 day
+    } catch (error) {
+      console.error("Failed to blacklist token in Redis", error);
+    }
   }
 
   // Clear the auth cookie regardless of whether it exists.
