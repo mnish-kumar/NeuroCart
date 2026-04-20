@@ -73,7 +73,7 @@ async function createPayment(req, res) {
     });
 
     const orderResponse = await axios.get(
-      `http://localhost:3003/api/orders/` + orderId,
+      `neurocart-ALB-518956108.ap-south-1.elb.amazonaws.com/api/orders/` + orderId,
       {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -244,7 +244,7 @@ async function verifyPayment(req, res) {
 
         // call cart service API
       try {
-        await axios.delete(`${process.env.CART_SERVICE_URL}/api/cart/clear`, {
+        await axios.delete(`neurocart-ALB-518956108.ap-south-1.elb.amazonaws.com/api/cart/clear`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },

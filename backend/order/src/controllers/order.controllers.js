@@ -13,7 +13,7 @@ async function createOrder(req, res) {
 
   let cartResponseData;
   try {
-    const cartResponse = await axios.get(`${CART_SERVICE_URL}/api/cart/`, {
+    const cartResponse = await axios.get(`neurocart-ALB-518956108.ap-south-1.elb.amazonaws.com/api/cart/`, {
       headers: { Authorization: `Bearer ${token}` },
       timeout: CART_SERVICE_TIMEOUT_MS,
     });
@@ -43,7 +43,7 @@ async function createOrder(req, res) {
     cartResponseData.items.map(async (item) => {
       return (
         await axios.get(
-          `neurocart-alb-1754343233.ap-south-1.elb.amazonaws.com/api/products/${item.productId}`,
+          `neurocart-ALB-518956108.ap-south-1.elb.amazonaws.com/api/products/${item.productId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
             timeout: CART_SERVICE_TIMEOUT_MS,

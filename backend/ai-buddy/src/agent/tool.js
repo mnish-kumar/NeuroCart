@@ -5,7 +5,7 @@ const axios = require('axios');
 const searchProduct = tool(async ({ query, token }) => {
     console.log(`Searching for product with query: query: ${query}, token: ${token}`);
     try {
-        const response = await axios.get(`neurocart-alb-1754343233.ap-south-1.elb.amazonaws.com/api/products?q=${query}`, 
+        const response = await axios.get(`neurocart-ALB-518956108.ap-south-1.elb.amazonaws.com/api/products?q=${query}`, 
             {
                 headers: {
                     Authorization: `Bearer ${token}`
@@ -30,7 +30,7 @@ const searchProduct = tool(async ({ query, token }) => {
 
 const addProductToCart = tool(async ({ productId, qty = 1, token }) => {
     try {
-        const response = await axios.post(`neurocart-alb-1754343233.ap-south-1.elb.amazonaws.com/api/cart/items`,
+        const response = await axios.post(`neurocart-ALB-518956108.ap-south-1.elb.amazonaws.com/api/cart/items`,
             {
                 productId,
                 qty
