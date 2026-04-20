@@ -4,6 +4,7 @@ const orderValidators = require('../validators/order.validator');
 const getMyOrdersValidator = require('../validators/getMyOrder.validator');
 const authMiddleware = require('../middleware/auth.middleware');
 const orderController = require('../controllers/order.controllers');
+const orderLimiter = require('../middleware/orderLimiter.middleware');
 
 /**
  * @route POST /api/orders
@@ -13,6 +14,7 @@ const orderController = require('../controllers/order.controllers');
 router.post(
     '/', 
     authMiddleware.createAuthMiddleware(['user']), 
+    orderLimiter,
     orderValidators.orderValidators,
     orderController.createOrder
 );
