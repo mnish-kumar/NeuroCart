@@ -143,53 +143,54 @@ async function removeItemFromCart(req, res) {
     const { productId } = req.params;
     const user = req.user;
 
-    if (mongoose.Types.ObjectId.isValid(productId) === false) {
-        return res.status(400).json({ message: 'Invalid product ID format' });
+    if (!mongoose.Types.ObjectId.isValid(productId)) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid product ID format"
+        });
     }
 
     try {
-        const cart = await cartModel.findOne({
-            user: user._id,
-        });
-
-        if (!cart) {
-            return res.status(404).json({
-                message: 'Cart not found',
-            });
-        }
-
-        const cartItems = Array.isArray(cart.items) ? cart.items : [];
-        const itemIndex = cartItems.findIndex(
-            item => item.productId.toString() === productId
+        const updatedCart = await cartModel.findOneAndUpdate(
+            {
+                user: user._id,
+                "items.productId": productId
+            },
+            {
+                $pull: { items: { productId } }
+            },
+            {
+                new: true
+            }
         );
 
-        if (itemIndex === -1) {
+        // cart OR item not found
+        if (!updatedCart) {
             return res.status(404).json({
-                message: 'Item not found in cart',
+                success: false,
+                message: "Item not found in cart"
             });
         }
 
-        const updatedCart = await cartModel.findOneAndUpdate({
-            user: user._id,
-        }, {
-            $pull: { items: { productId } },
-        }, {
-            new: true,
-        })
+        // delete empty cart
+        if (updatedCart.items.length === 0) {
+            await cartModel.deleteOne({ user: user._id });
+        }
 
         return res.status(200).json({
-            message: 'Item removed from cart successfully',
-            cart: updatedCart,
+            success: true,
+            message: "Item removed successfully",
+            cart: updatedCart
         });
-    } catch (err) {
-        if (err.name === 'CastError') {
-            return res.status(400).json({ message: 'Invalid product ID format' });
-        }
-        
-        console.error('Error in removeItemFromCart:', err);
-        return res.status(500).json({ error: 'Internal server error' });
-    }
 
+    } catch (err) {
+        console.error('Error in removeItemFromCart:', err);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
 }
 
 
@@ -223,6 +224,46 @@ async function deleteCart(req, res) {
     }
 }
 
+/**
+ * @route DELETE /api/cart/clear
+ * @desc Clear all items from the cart for the current user. Returns the updated (empty) cart.
+ * @access Private (requires 'user' role)
+ * Note: This is different from deleting the cart. The cart document will still exist but with an empty items array.
+ */
+async function clearCart(req, res) {
+    const user = req.user;
+
+    if (!user || !user._id) {
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized'
+        });
+    }
+
+    try {
+        const updatedCart = await cartModel.findOneAndUpdate(
+            { user: user._id },
+            { $set: { items: [] } },
+            { new: true }
+        );
+        if (!updatedCart) {
+            return res.status(200).json({
+                success: false,
+                message: 'Cart already empty or not found',
+            });
+        }
+        return res.status(200).json({
+            success: true,
+            message: 'Cart cleared successfully',
+            cart: updatedCart,
+        });
+    }
+    catch (err) {
+        console.error('Error in clearCart:', err);
+        return res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
 
 module.exports = {
     addItemToCart,
@@ -230,4 +271,5 @@ module.exports = {
     getCart,
     removeItemFromCart,
     deleteCart,
+    clearCart
 }

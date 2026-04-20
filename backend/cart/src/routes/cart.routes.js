@@ -69,4 +69,10 @@ router.delete(
 );
 
 
+router.delete(
+    '/clear',
+    authMiddleware.createAuthMiddleware(['user']),
+    cartController.clearCart
+);
+
 module.exports = router;

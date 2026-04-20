@@ -3,19 +3,34 @@ const amqplib = require('amqplib');
 let channel, connection;
 
 // Connect server to RabbitMQ
-async function connect() {
-    if (connection) return connection;
-
+async function connectRabbitMQ() {
     try {
+        console.log("Connecting to RabbitMQ...");
+
         connection = await amqplib.connect(process.env.RABBIT_MQ_URL);
+
+        connection.on("error", (err) => {
+            console.error("RabbitMQ connection error:", err.message);
+        });
+
+        connection.on("close", () => {
+            console.warn("RabbitMQ connection closed! Reconnecting...");
+            connection = null;
+            channel = null;
+            setTimeout(connectRabbitMQ, 5000); // retry after 5 sec
+        });
+
         channel = await connection.createChannel();
-        console.log('Connected to RabbitMQ');
-        return connection;
+
+        console.log("RabbitMQ connected✅");
+
+        return channel;
+
     } catch (error) {
-        console.error('Failed to connect to RabbitMQ:', error);
-        throw error;
+        console.error("❌ Failed to connect RabbitMQ:", error.message);
+        setTimeout(connectRabbitMQ, 5000); // retry
     }
-}
+};
 
 
 // Push data to RabbitMQ queue
@@ -54,7 +69,7 @@ async function subscribeToQueue(queueName, callback) {
 
 
 module.exports = { 
-    connect,
+    connectRabbitMQ,
     publishToQueue,
     subscribeToQueue,
     channel,

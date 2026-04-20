@@ -17,6 +17,7 @@ async function createOrder(req, res) {
       headers: { Authorization: `Bearer ${token}` },
       timeout: CART_SERVICE_TIMEOUT_MS,
     });
+
     cartResponseData = cartResponse.data?.cart;
   } catch (err) {
     console.error("Error fetching cart data:", err.message);
@@ -92,7 +93,7 @@ async function createOrder(req, res) {
     };
   });
 
-  // --- Persist the order ──────────────────────────────────────────────────
+  // --- Create the order ──────────────────────────────────────────────────
   let order;
   try {
     order = await orderModel.create({
@@ -115,6 +116,7 @@ async function createOrder(req, res) {
 
   // --- Publish order created event to RabbitMQ ─────────────────────────────
   await publishToQueue("ORDER_SELLER_DASHBOARD.ORDER_CREATED", order);
+
 
   return res.status(201).json({
     success: true,

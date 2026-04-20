@@ -3,11 +3,12 @@ const sendEmail = require("../email");
 const { getWelcomeEmailHtml } = require("../createEmailTemplate");
 
 module.exports = function () {
+  // Listen for user registration events and send welcome emails
   subscribeToQueue("AUTH_NOTIFICATIONS_USER_REGISTRATION", async (data) => {
     await sendEmail(
       data.email,
       "Welcome to NeuroCart 🎉",
-      `Hi ${data.fullName.firstName}, welcome! Start shopping at https://neurocart.com`,
+      `Hi ${data.fullName.firstName}, welcome! Start shopping at https://neurocart.me`,
       getWelcomeEmailHtml(data),
     );
   });

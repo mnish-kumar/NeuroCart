@@ -1,11 +1,11 @@
 const express = require('express');
 const app = express();
-const { connect } = require('./broker/broker');
+const { connectRabbitMQ } = require('./broker/broker');
 const setupListeners = require('./broker/listner');
 
 
 // Connect to RabbitMQ
-connect().then(() => {
+connectRabbitMQ().then(() => {
     setupListeners();
 }).catch((error) => {
     console.error('Failed to connect to RabbitMQ:', error);
